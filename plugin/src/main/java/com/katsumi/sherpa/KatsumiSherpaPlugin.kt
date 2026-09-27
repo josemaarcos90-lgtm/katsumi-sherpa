@@ -14,4 +14,24 @@ class KatsumiSherpaPlugin(godot: Godot) : GodotPlugin(godot) {
         Log.i(pluginName, message)
         return message
     }
+
+    @UsedByGodot
+    fun loadNativeLibraries(): String {
+        return try {
+            System.loadLibrary("onnxruntime")
+            System.loadLibrary("sherpa-onnx-c-api")
+            System.loadLibrary("sherpa-onnx-cxx-api")
+            System.loadLibrary("sherpa-onnx-jni")
+            val message = "KATSUMI SHERPA | NATIVE LIBS OK"
+            Log.i(pluginName, message)
+            message
+        } catch (error: Throwable) {
+            val message = "KATSUMI SHERPA | NATIVE LIBS ERROR: ${error.javaClass.simpleName}: ${error.message}"
+            Log.e(pluginName, message, error)
+            message
+        }
+    }
+
+    @UsedByGodot
+    fun getBridgeVersion(): String = "0.2.0-sherpa-onnx-1.13.8"
 }
