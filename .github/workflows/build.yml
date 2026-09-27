@@ -2,6 +2,8 @@ name: Build Katsumi Sherpa Android Plugin
 
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
 
 jobs:
   build:
@@ -11,17 +13,27 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Test environment
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.14.3'
+
+      - name: Build debug AAR
+        run: gradle :plugin:assembleDebug --stacktrace
+
+      - name: Verify AAR
         run: |
-          echo "=============================="
-          echo "KATSUMI SHERPA - BUILD TEST"
-          echo "=============================="
-          java -version
-          echo ""
-          echo "Repository:"
-          pwd
-          echo ""
-          echo "Files:"
-          find . -maxdepth 3 -type f
-          echo ""
-          echo "BUILD ENVIRONMENT OK"
+          test -f plugin/build/outputs/aar/KatsumiSherpa-debug.aar
+          echo "KATSUMI SHERPA | AAR BUILD OK"
+
+      - name: Upload debug AAR
+        uses: actions/upload-artifact@v4
+        with:
+          name: KatsumiSherpa-debug
+          path: plugin/build/outputs/aar/KatsumiSherpa-debug.aar
