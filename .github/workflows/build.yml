@@ -24,13 +24,34 @@ jobs:
         with:
           gradle-version: '8.14.3'
 
+      - name: Fetch sherpa-onnx Android 1.13.8
+        run: |
+          curl -L --fail --retry 3             -o /tmp/sherpa-android.tar.bz2             https://github.com/k2-fsa/sherpa-onnx/releases/download/v1.13.8/sherpa-onnx-v1.13.8-android.tar.bz2
+          mkdir -p /tmp/sherpa
+          tar -xjf /tmp/sherpa-android.tar.bz2 -C /tmp/sherpa
+
+      - name: Package ARM64 native libraries
+        run: |
+          mkdir -p plugin/src/main/jniLibs/arm64-v8a
+          cp /tmp/sherpa/jniLibs/arm64-v8a/libonnxruntime.so plugin/src/main/jniLibs/arm64-v8a/
+          cp /tmp/sherpa/jniLibs/arm64-v8a/libsherpa-onnx-c-api.so plugin/src/main/jniLibs/arm64-v8a/
+          cp /tmp/sherpa/jniLibs/arm64-v8a/libsherpa-onnx-cxx-api.so plugin/src/main/jniLibs/arm64-v8a/
+          cp /tmp/sherpa/jniLibs/arm64-v8a/libsherpa-onnx-jni.so plugin/src/main/jniLibs/arm64-v8a/
+          ls -lh plugin/src/main/jniLibs/arm64-v8a
+
       - name: Build debug AAR
         run: gradle :plugin:assembleDebug --stacktrace
 
-      - name: Verify AAR
+      - name: Verify AAR and native libraries
         run: |
-          test -f plugin/build/outputs/aar/KatsumiSherpa-debug.aar
-          echo "KATSUMI SHERPA | AAR BUILD OK"
+          AAR=plugin/build/outputs/aar/KatsumiSherpa-debug.aar
+          test -f "$AAR"
+          unzip -l "$AAR" | tee /tmp/aar-files.txt
+          grep -q 'jni/arm64-v8a/libonnxruntime.so' /tmp/aar-files.txt
+          grep -q 'jni/arm64-v8a/libsherpa-onnx-c-api.so' /tmp/aar-files.txt
+          grep -q 'jni/arm64-v8a/libsherpa-onnx-cxx-api.so' /tmp/aar-files.txt
+          grep -q 'jni/arm64-v8a/libsherpa-onnx-jni.so' /tmp/aar-files.txt
+          echo "KATSUMI SHERPA | AAR + ARM64 NATIVE LIBS OK"
 
       - name: Upload debug AAR
         uses: actions/upload-artifact@v4
